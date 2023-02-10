@@ -1,11 +1,12 @@
-package defaults
+package structer_test
 
 import (
 	"reflect"
 	"testing"
 	"time"
 
-	"github.com/creasty/defaults/internal/fixture"
+	"github.com/michaellanpart/structer"
+	"github.com/michaellanpart/structer/internal/fixture"
 )
 
 type (
@@ -170,7 +171,7 @@ func TestMustSet(t *testing.T) {
 			NonInitialStructPtr:        &Struct{Foo: 123},
 			DeepSliceOfStructWithNoTag: [][][]Struct{{{{Foo: 123}}}},
 		}
-		MustSet(sample)
+		structer.Values.MustSet(sample)
 	})
 
 	t.Run("not struct", func(t *testing.T) {
@@ -180,7 +181,7 @@ func TestMustSet(t *testing.T) {
 			}
 		}()
 		var a int
-		MustSet(&a)
+		structer.Values.MustSet(&a)
 	})
 
 	t.Run("not pointer", func(t *testing.T) {
@@ -196,7 +197,7 @@ func TestMustSet(t *testing.T) {
 			NonInitialStructPtr:        &Struct{Foo: 123},
 			DeepSliceOfStructWithNoTag: [][][]Struct{{{{Foo: 123}}}},
 		}
-		MustSet(sample)
+		structer.Values.MustSet(sample)
 	})
 
 }
@@ -217,20 +218,20 @@ func TestInit(t *testing.T) {
 		},
 	}
 
-	if err := Set(sample); err != nil {
+	if err := structer.Values.Set(sample); err != nil {
 		t.Fatalf("it should not return an error: %v", err)
 	}
 
 	nonPtrVal := 1
 
-	if err := Set(nonPtrVal); err == nil {
+	if err := structer.Values.Set(nonPtrVal); err == nil {
 		t.Fatalf("it should return an error when used for a non-pointer type")
 	}
-	if err := Set(&nonPtrVal); err == nil {
+	if err := structer.Values.Set(&nonPtrVal); err == nil {
 		t.Fatalf("it should return an error when used for a non-pointer type")
 	}
 
-	Set(&fixture.Sample{}) // should not panic
+	structer.Values.Set(&fixture.Sample{}) // should not panic
 
 	t.Run("primitive types", func(t *testing.T) {
 		if sample.Int != 1 {
@@ -500,19 +501,19 @@ func TestInit(t *testing.T) {
 		}
 
 		t.Run("invalid json", func(t *testing.T) {
-			if err := Set(&struct {
+			if err := structer.Values.Set(&struct {
 				I []int `default:"[!]"`
 			}{}); err == nil {
 				t.Errorf("it should return error")
 			}
 
-			if err := Set(&struct {
+			if err := structer.Values.Set(&struct {
 				I map[string]int `default:"{1}"`
 			}{}); err == nil {
 				t.Errorf("it should return error")
 			}
 
-			if err := Set(&struct {
+			if err := structer.Values.Set(&struct {
 				S struct {
 					I []int
 				} `default:"{!}"`
@@ -520,7 +521,7 @@ func TestInit(t *testing.T) {
 				t.Errorf("it should return error")
 			}
 
-			if err := Set(&struct {
+			if err := structer.Values.Set(&struct {
 				S struct {
 					I []int `default:"[!]"`
 				}
@@ -665,7 +666,7 @@ func TestCanUpdate(t *testing.T) {
 		&st{}:        false,
 	}
 	for input, expect := range pairs {
-		output := CanUpdate(input)
+		output := structer.Values.CanUpdate(input)
 		if output != expect {
 			t.Errorf("CanUpdate(%v) returns %v, expected %v", input, output, expect)
 		}
@@ -683,36 +684,36 @@ type Parent struct {
 
 func TestPointerStructMember(t *testing.T) {
 	m := Parent{Child: &Child{Name: "Jim"}}
-	Set(&m)
+	structer.Values.Set(&m)
 	if m.Child.Age != 20 {
 		t.Errorf("20 is expected")
 	}
 }
 
 type Main struct {
-	MainInt int `default:"-"`
+	MainInt int `default:"1"`
 	*Other  `default:"{}"`
 }
 
 type Other struct {
-	OtherInt int `default:"-"`
+	OtherInt int `default:"1"`
 }
 
 func (s *Main) SetDefaults() {
-	if CanUpdate(s.MainInt) {
+	if structer.Values.CanUpdate(s.MainInt) {
 		s.MainInt = 1
 	}
 }
 
 func (s *Other) SetDefaults() {
-	if CanUpdate(s.OtherInt) {
+	if structer.Values.CanUpdate(s.OtherInt) {
 		s.OtherInt = 1
 	}
 }
 
 func TestDefaultsSetter(t *testing.T) {
 	main := &Main{}
-	Set(main)
+	structer.Values.Set(main)
 	if main.OtherInt != 1 {
 		t.Errorf("expected 1 for OtherInt, got %d", main.OtherInt)
 	}

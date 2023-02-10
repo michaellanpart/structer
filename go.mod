@@ -1,3 +1,5 @@
-module github.com/creasty/defaults
+module github.com/michaellanpart/structer
 
-go 1.14
+go 1.18
+
+require github.com/joho/godotenv v1.5.1
