@@ -1,12 +1,6 @@
-defaults
+structer
 ========
-
-[![CircleCI](https://circleci.com/gh/creasty/defaults/tree/master.svg?style=svg)](https://circleci.com/gh/creasty/defaults/tree/master)
-[![codecov](https://codecov.io/gh/creasty/defaults/branch/master/graph/badge.svg)](https://codecov.io/gh/creasty/defaults)
-[![GitHub release](https://img.shields.io/github/release/creasty/defaults.svg)](https://github.com/creasty/defaults/releases)
-[![License](https://img.shields.io/github/license/creasty/defaults.svg)](./LICENSE)
-
-Initialize structs with default values
+Initialize structs with environment and default values based on struct tags
 
 - Supports almost all kind of types
   - Scalar types
@@ -22,7 +16,8 @@ Initialize structs with default values
   - Pointer types
     - e.g., `*SampleStruct`, `*int`
 - Recursively initializes fields in a struct
-- Dynamically sets default values by [`defaults.Setter`](./setter.go) interface
+- Dynamically sets default values using [`structer.Values.Set`] method
+- No instantiation is required.
 - Preserves non-initial values from being reset with a default value
 
 
@@ -30,46 +25,58 @@ Usage
 -----
 
 ```go
-type Gender string
+// this code with associated env file are in ./example folder
+package main
 
-type Sample struct {
-	Name   string `default:"John Smith"`
-	Age    int    `default:"27"`
-	Gender Gender `default:"m"`
+import (
+	"encoding/json"
+	"fmt"
 
-	Slice       []string       `default:"[]"`
-	SliceByJSON []int          `default:"[1, 2, 3]"` // Supports JSON
+	"github.com/joho/godotenv"
+	"github.com/michaellanpart/structer"
+)
 
-	Map                 map[string]int `default:"{}"`
-	MapByJSON           map[string]int `default:"{\"foo\": 123}"`
-	MapOfStruct         map[string]OtherStruct
-	MapOfPtrStruct      map[string]*OtherStruct
-	MapOfStructWithTag  map[string]OtherStruct `default:"{\"Key1\": {\"Foo\":123}}"`
-    
-	Struct    OtherStruct  `default:"{}"`
-	StructPtr *OtherStruct `default:"{\"Foo\": 123}"`
+func main() {
 
-	NoTag  OtherStruct               // Recurses into a nested struct by default
-	OptOut OtherStruct `default:"-"` // Opt-out
+	// load environment variables
+	godotenv.Load("./example/example.env")
+
+	// instantiate struct
+	user := &User{}
+
+	// set env and default values
+	structer.Values.Set(user)
+
+	// output object to console
+	output, _ := json.MarshalIndent(user, "", "    ")
+	fmt.Printf("%s\n", output)
 }
 
-type OtherStruct struct {
-	Hello  string `default:"world"` // Tags in a nested struct also work
-	Foo    int    `default:"-"`
-	Random int    `default:"-"`
+type Contact struct {
+	Number string `json:"number"`
+}
+type User struct {
+	ID               int       `default:"0" env:"EmployeeID" json:"id"`
+	Name             string    `default:"" env:"EmployeeName" json:"name"`
+	EmploymentStatus string    `default:"Employed" json:"employment_status"`
+	Contacts         []Contact `default:"[{\"Number\":\"817-273-3746\"},{\"Number\":\"415-384-9919\"}]" json:"contacts"`
 }
 
-// SetDefaults implements defaults.Setter interface
-func (s *OtherStruct) SetDefaults() {
-	if defaults.CanUpdate(s.Random) { // Check if it's a zero value (recommended)
-		s.Random = rand.Int() // Set a dynamic value
-	}
-}
 ```
-
-```go
-obj := &Sample{}
-if err := defaults.Set(obj); err != nil {
-	panic(err)
+console output
+``` json
+{
+    "id": 39438454,
+    "name": "Roger Rabit",
+    "employment_status": "Employed",
+    "contacts": [
+        {
+            "number": "817-273-3746"
+        },
+        {
+            "number": "415-384-9919"
+        }
+    ]
 }
+
 ```
