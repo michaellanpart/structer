@@ -11,7 +11,7 @@ import (
 func main() {
 
 	// load environment variables
-	godotenv.Load(".env")
+	godotenv.Load("./example/example.env")
 
 	// instantiate struct
 	user := &User{}
@@ -29,8 +29,7 @@ type Contact struct {
 }
 type User struct {
 	ID               int       `default:"0" env:"EmployeeID" json:"id"`
-	FirstName        string    `default:"" env:"EmployeeFirstName" json:"firstname"`
-	LastName         string    `default:"" env:"EmployeeLastName" json:"lastname"`
-	EmploymentStatus string    `default:"Employed" json:"employmentstatus"`
+	Name             string    `default:"" env:"EmployeeName" json:"name"`
+	EmploymentStatus string    `default:"Employed" json:"employment_status"`
 	Contacts         []Contact `default:"[{\"Number\":\"817-273-3746\"},{\"Number\":\"415-384-9919\"}]" json:"contacts"`
 }
