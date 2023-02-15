@@ -3,6 +3,7 @@ package structer
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"reflect"
 	"strconv"
@@ -13,25 +14,17 @@ var (
 	errInvalidType = errors.New("not a struct pointer")
 )
 
-var Values *structloader
-
-func init() {
-	s := &structloader{}
-	Values = s
-}
-
 type Structer interface {
 	Set(ptr interface{}) error
 	MustSet(ptr interface{})
 	CanUpdate(v interface{}) bool
+	PrettyPrint(v interface{})
 }
 
-type structloader struct{}
-
-// Set initializes members in a struct referenced by a pointer.
+// SetDefaults initializes members in a struct referenced by a pointer.
 // Maps and slices are initialized by `make` and other primitive types are set with default values.
 // `ptr` should be a struct pointer
-func (s *structloader) Set(ptr interface{}) error {
+func SetDefaults(ptr interface{}) error {
 	if reflect.TypeOf(ptr).Kind() != reflect.Ptr {
 		return errInvalidType
 	}
@@ -44,7 +37,7 @@ func (s *structloader) Set(ptr interface{}) error {
 	}
 
 	for i := 0; i < t.NumField(); i++ {
-		if err := s.setField(v.Field(i), s.getValue(t.Field(i))); err != nil {
+		if err := setField(v.Field(i), getValue(t.Field(i))); err != nil {
 			return err
 		}
 	}
@@ -53,18 +46,18 @@ func (s *structloader) Set(ptr interface{}) error {
 
 // MustSet function is a wrapper of Set function
 // It will call Set and panic if err not equals nil.
-func (s *structloader) MustSet(ptr interface{}) {
-	if err := s.Set(ptr); err != nil {
+func MustSet(ptr interface{}) {
+	if err := SetDefaults(ptr); err != nil {
 		panic(err)
 	}
 }
 
 // CanUpdate returns true when the given value is an initial value of its type
-func (s *structloader) CanUpdate(v interface{}) bool {
-	return s.isInitialValue(reflect.ValueOf(v))
+func CanUpdate(v interface{}) bool {
+	return isInitialValue(reflect.ValueOf(v))
 }
 
-func (s *structloader) getValue(field reflect.StructField) string {
+func getValue(field reflect.StructField) string {
 	var retval string
 	defaultValue := field.Tag.Get("default")
 	envField := field.Tag.Get("env")
@@ -77,16 +70,16 @@ func (s *structloader) getValue(field reflect.StructField) string {
 	return retval
 }
 
-func (s *structloader) setField(field reflect.Value, setVal string) error {
+func setField(field reflect.Value, setVal string) error {
 	if !field.CanSet() {
 		return nil
 	}
 
-	if !s.shouldInitializeField(field, setVal) {
+	if !shouldInitializeField(field, setVal) {
 		return nil
 	}
 
-	isInitial := s.isInitialValue(field)
+	isInitial := isInitialValue(field)
 	if isInitial {
 		switch field.Kind() {
 		case reflect.Bool:
@@ -182,15 +175,15 @@ func (s *structloader) setField(field reflect.Value, setVal string) error {
 	switch field.Kind() {
 	case reflect.Ptr:
 		if isInitial || field.Elem().Kind() == reflect.Struct {
-			s.setField(field.Elem(), setVal)
+			setField(field.Elem(), setVal)
 		}
 	case reflect.Struct:
-		if err := s.Set(field.Addr().Interface()); err != nil {
+		if err := SetDefaults(field.Addr().Interface()); err != nil {
 			return err
 		}
 	case reflect.Slice:
 		for j := 0; j < field.Len(); j++ {
-			if err := s.setField(field.Index(j), setVal); err != nil {
+			if err := setField(field.Index(j), setVal); err != nil {
 				return err
 			}
 		}
@@ -202,14 +195,14 @@ func (s *structloader) setField(field reflect.Value, setVal string) error {
 			case reflect.Ptr:
 				switch v.Elem().Kind() {
 				case reflect.Struct, reflect.Slice, reflect.Map:
-					if err := s.setField(v.Elem(), ""); err != nil {
+					if err := setField(v.Elem(), ""); err != nil {
 						return err
 					}
 				}
 			case reflect.Struct, reflect.Slice, reflect.Map:
 				ref := reflect.New(v.Type())
 				ref.Elem().Set(v)
-				if err := s.setField(ref.Elem(), ""); err != nil {
+				if err := setField(ref.Elem(), ""); err != nil {
 					return err
 				}
 				field.SetMapIndex(e, ref.Elem().Convert(v.Type()))
@@ -220,11 +213,16 @@ func (s *structloader) setField(field reflect.Value, setVal string) error {
 	return nil
 }
 
-func (s *structloader) isInitialValue(field reflect.Value) bool {
+func PrettyPrint(v interface{}) {
+	output, _ := json.MarshalIndent(v, "", "    ")
+	fmt.Printf("%s\n", output)
+}
+
+func isInitialValue(field reflect.Value) bool {
 	return reflect.DeepEqual(reflect.Zero(field.Type()).Interface(), field.Interface())
 }
 
-func (s *structloader) shouldInitializeField(field reflect.Value, tag string) bool {
+func shouldInitializeField(field reflect.Value, tag string) bool {
 	switch field.Kind() {
 	case reflect.Struct:
 		return true

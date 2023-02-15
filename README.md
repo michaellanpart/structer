@@ -30,9 +30,6 @@ Usage
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/joho/godotenv"
 	"github.com/michaellanpart/structer"
 )
@@ -45,12 +42,11 @@ func main() {
 	// instantiate struct
 	user := &User{}
 
-	// set env and default values
-	structer.Values.Set(user)
+	// load env and default values
+	structer.SetDefaults(user)
 
-	// format and output object to console
-	output, _ := json.MarshalIndent(user, "", "    ")
-	fmt.Printf("%s\n", output)
+	// output object to console
+	structer.PrettyPrint(user)
 }
 
 type Contact struct {
