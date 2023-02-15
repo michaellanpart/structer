@@ -48,7 +48,7 @@ func main() {
 	// set env and default values
 	structer.Values.Set(user)
 
-	// output object to console
+	// format and output object to console
 	output, _ := json.MarshalIndent(user, "", "    ")
 	fmt.Printf("%s\n", output)
 }
