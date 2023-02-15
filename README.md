@@ -1,6 +1,6 @@
 structer
 ========
-The `structer` facilitates the loading of environment, and default values for a struct. The loading of these values happens in the order of `environment` first then `default`, if no value is provided. Data type defaults on struct properties if not strictly set will floow the associated data type. COnfiguration of this happens in the struct tag using `default:"myvalue"` or `env:"environment property name"`.
+The `structer` facilitates the loading of environment, and default values for a struct. The loading of these values happens in the order of `environment` variables first then `default`, if empty. Data type defaults on struct properties if not strictly set will floow the associated data type. COnfiguration of this happens in the struct tag using `default:"myvalue"` or `env:"environment property name"`.
 
 Reasons to use this library. 
 - Supports almost all kind of types
